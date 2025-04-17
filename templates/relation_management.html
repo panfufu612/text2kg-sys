@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关系三元组管理 - 知识图谱可视化</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/css/graph.css" rel="stylesheet">
+    <link href="/static/css/relation_management.css" rel="stylesheet">
+    <style>
+        .management-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .btn-icon {
+            margin-right: 5px;
+        }
+        .relation-filter {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .triple-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .triple-item {
+            background-color: #e9ecef;
+            padding: 10px 15px;
+            border-radius: 6px;
+            min-width: 150px;
+            margin: 0 5px;
+        }
+        /* 三元组节点样式 */
+        .source-node {
+            background-color: #e3f2fd;
+            border-left: 3px solid #007bff;
+            font-weight: 500;
+        }
+        .relation-type {
+            background-color: #eee;
+            border-left: 3px solid #6c757d;
+            font-weight: 500;
+        }
+        .target-node {
+            background-color: #e8f5e9;
+            border-left: 3px solid #28a745;
+            font-weight: 500;
+        }
+        .triple-arrow {
+            margin: 0 10px;
+            color: #6c757d;
+            font-size: 20px;
+        }
+        /* 节点属性样式 */
+        .node-property-container {
+            border-radius: 6px;
+            border: 1px solid rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            background-color: #f8f9fa;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .node-property-header {
+            padding: 10px 15px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            background-color: rgba(0,0,0,0.03);
+            border-top-left-radius: 6px;
+            border-top-right-radius: 6px;
+        }
+        .node-property-body {
+            padding: 10px 15px;
+        }
+        .property-table {
+            width: 100%;
+        }
+        .property-table th {
+            color: #6c757d;
+            font-size: 0.85rem;
+            font-weight: normal;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            padding: 5px 8px;
+        }
+        .property-table td {
+            padding: 5px 8px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        .property-table tr:last-child td {
+            border-bottom: none;
+        }
+        .property-key {
+            font-family: monospace;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .property-value {
+            word-break: break-word;
+        }
+        .section-title {
+            position: relative;
+            margin: 20px 0 15px;
+            padding-left: 15px;
+            font-size: 1rem;
+            color: #495057;
+            border-left: 3px solid #6c757d;
+        }
+        .source-node-title {
+            border-left-color: #007bff;
+        }
+        .relation-title {
+            border-left-color: #6c757d;
+        }
+        .target-node-title {
+            border-left-color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">知识图谱可视化</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/stats">统计分析</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/nodes">节点管理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/relations">关系管理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/text2kg">文本生成图谱</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container" style="padding-top: 70px;">
+        <h1 class="text-center main-title">关系三元组管理</h1>
+        
+        <!-- 关系筛选 -->
+        <div class="management-container relation-filter">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4><i class="fas fa-filter me-2"></i>关系筛选</h4>
+                <button class="btn btn-primary" id="btn-advanced-search">
+                    <i class="fas fa-plus btn-icon"></i>高级搜索
+                </button>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">源节点</label>
+                    <input type="text" class="form-control" id="filter-source" placeholder="输入源节点名称">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">关系类型</label>
+                    <select class="form-select" id="filter-relation">
+                        <option value="">全部类型</option>
+                        <!-- 动态加载关系类型 -->
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">目标节点</label>
+                    <input type="text" class="form-control" id="filter-target" placeholder="输入目标节点名称">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" id="btn-search">
+                        <i class="fas fa-search btn-icon"></i>搜索
+                    </button>
+                </div>
+            </div>
+
+            <!-- 高级搜索面板 -->
+            <div id="advanced-search-panel" class="mt-3 pt-3 border-top d-none">
+                <h5 class="mb-3">高级搜索选项</h5>
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label">关系属性</label>
+                        <input type="text" class="form-control" id="filter-property" placeholder="属性名称，如weight">
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label">属性值</label>
+                        <input type="text" class="form-control" id="filter-property-value" placeholder="属性值">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">日期范围</label>
+                        <div class="input-group">
+                            <input type="date" class="form-control" id="filter-date-start">
+                            <span class="input-group-text">至</span>
+                            <input type="date" class="form-control" id="filter-date-end">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 关系列表与操作 -->
+        <div class="management-container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4><i class="fas fa-project-diagram me-2"></i>关系列表</h4>
+                <div class="btn-group">
+                    <button class="btn btn-success" id="btn-add-relation">
+                        <i class="fas fa-plus btn-icon"></i>添加关系
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>源节点</th>
+                            <th>关系类型</th>
+                            <th>目标节点</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="relation-list">
+                        <!-- 关系数据将动态加载 -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页 -->
+            <nav aria-label="关系列表分页">
+                <ul class="pagination justify-content-center" id="pagination">
+                    <!-- 分页将动态生成 -->
+                </ul>
+            </nav>
+        </div>
+        
+        <!-- 关系详情模态框 -->
+        <div class="modal fade" id="relationModal" tabindex="-1" aria-labelledby="relationModalTitle" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="relationModalTitle">编辑关系</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="relation-form">
+                            <input type="hidden" id="relation-id">
+                            
+                            <!-- 三元组可视化 -->
+                            <div class="triple-container">
+                                <div class="triple-item source-node" id="visual-source" title="点击编辑源节点">源节点</div>
+                                <div class="triple-arrow"><i class="fas fa-arrow-right"></i></div>
+                                <div class="triple-item relation-type" id="visual-relation" title="点击编辑关系类型">关系</div>
+                                <div class="triple-arrow"><i class="fas fa-arrow-right"></i></div>
+                                <div class="triple-item target-node" id="visual-target" title="点击编辑目标节点">目标节点</div>
+                            </div>
+
+                            <!-- 编辑提示 -->
+                            <div class="text-center mb-3">
+                                <span class="badge bg-primary">编辑关系信息</span>
+                                <div class="mt-2 small text-muted">完成源节点、关系类型和目标节点的填写后，可以添加可选的属性信息</div>
+                            </div>
+
+                            <!-- 数据库连接状态 -->
+                            <div class="connection-status text-center mb-3">
+                                <span class="badge bg-success d-none" id="db-connected"><i class="fas fa-check-circle me-1"></i>数据库已连接</span>
+                                <span class="badge bg-danger" id="db-disconnected"><i class="fas fa-exclamation-triangle me-1"></i>数据库连接中，请稍候...</span>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">源节点 <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="relation-source-name" placeholder="输入源节点名称" required>
+                                        <input type="hidden" id="relation-source">
+                                        <button class="btn btn-outline-secondary" type="button" id="search-source-node">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-text">
+                                        <span class="text-muted">输入节点名称并搜索，</span>
+                                        <span class="text-danger fw-bold">必须从结果中选择节点</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">关系类型</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="relation-type-input" list="relation-types-list" placeholder="输入关系类型" required>
+                                        <input type="hidden" id="relation-type">
+                                        <datalist id="relation-types-list">
+                                            <!-- 动态加载关系类型 -->
+                                        </datalist>
+                                    </div>
+                                    <div class="form-text">输入关系类型或从列表中选择</div>
+                                    <div id="relation-suggestion-container" class="suggestion-container d-none"></div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">目标节点 <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="relation-target-name" placeholder="输入目标节点名称" required>
+                                        <input type="hidden" id="relation-target">
+                                        <button class="btn btn-outline-secondary" type="button" id="search-target-node">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-text">
+                                        <span class="text-muted">输入节点名称并搜索，</span>
+                                        <span class="text-danger fw-bold">必须从结果中选择节点</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 节点搜索结果 -->
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div id="source-search-results" class="search-results d-none">
+                                        <h6 class="text-muted">源节点搜索结果：</h6>
+                                        <div class="list-group" style="max-height: 200px; overflow-y: auto;">
+                                            <!-- 搜索结果将动态加载 -->
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div id="target-search-results" class="search-results d-none">
+                                        <h6 class="text-muted">目标节点搜索结果：</h6>
+                                        <div class="list-group" style="max-height: 200px; overflow-y: auto;">
+                                            <!-- 搜索结果将动态加载 -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div id="relation-properties" class="properties-container">
+                                    <!-- 属性字段将动态生成 -->
+                                </div>
+                                <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="add-property">
+                                    <i class="fas fa-plus btn-icon"></i>添加属性
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" id="save-relation">
+                            <i class="fas fa-save btn-icon"></i>保存
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 删除确认模态框 -->
+        <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalTitle" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title" id="deleteModalTitle"><i class="fas fa-exclamation-triangle me-2"></i>确认删除</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="lead">您确定要删除以下关系吗？</p>
+                        <div class="triple-container mb-3">
+                            <div class="triple-item source-node" id="delete-source"></div>
+                            <div class="triple-arrow"><i class="fas fa-arrow-right"></i></div>
+                            <div class="triple-item relation-type" id="delete-relation"></div>
+                            <div class="triple-arrow"><i class="fas fa-arrow-right"></i></div>
+                            <div class="triple-item target-node" id="delete-target"></div>
+                        </div>
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            <strong>警告：</strong>此操作不可恢复！删除后关系将永久消失。
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>取消
+                        </button>
+                        <button type="button" class="btn btn-danger" id="confirm-delete">
+                            <i class="fas fa-trash-alt me-1"></i>确认删除
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 提示框 -->
+        <div class="toast-container position-fixed bottom-0 end-0 p-3">
+            <div class="toast" id="toast" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header">
+                    <strong class="me-auto" id="toast-title">提示</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body" id="toast-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/relation_management.js"></script>
+</body>
+</html>

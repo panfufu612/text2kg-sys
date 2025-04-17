@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文本知识图谱生成系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/kg_style.css') }}" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <link href="/static/css/graph.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 70px;  /* 为固定导航栏留出空间 */
+        }
+        .container {
+            padding-top: 20px;  /* 给容器添加额外的顶部间距 */
+        }
+        .tabs {
+            margin-top: 20px;  /* 为标签页添加顶部间距 */
+        }
+        .error-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 80vh;
+            text-align: center;
+        }
+        
+        .error-code {
+            font-size: 8rem;
+            font-weight: 700;
+            color: #e74c3c;
+            margin-bottom: 0;
+            line-height: 1;
+        }
+        
+        .error-message {
+            font-size: 1.5rem;
+            color: #7f8c8d;
+            margin-bottom: 2rem;
+        }
+        
+        .back-button {
+            padding: 0.8rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .back-button:hover {
+            transform: translateY(-3px);
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">知识图谱可视化</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/stats">统计分析</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/nodes">节点管理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/relations">关系管理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/text2kg">文本生成图谱</a>
+                    </li>
+                    {% if g.admin %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin">管理系统</a>
+                    </li>
+                    {% endif %}
+                </ul>
+                <div class="d-flex">
+                    {% if g.authenticated %}
+                    <div class="d-flex align-items-center">
+                        <div class="user-avatar">
+                            {{ g.user.username[0].upper() }}
+                        </div>
+                        <div class="dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                {{ g.user.username }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                <li><a class="dropdown-item" href="/profile">个人资料</a></li>
+                                {% if g.admin %}
+                                <li><a class="dropdown-item" href="/admin">管理面板</a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="/logout">退出登录</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    {% else %}
+                    <a href="/login" class="btn btn-outline-primary me-2">登录</a>
+                    <a href="/register" class="btn btn-primary">注册</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="main-content">
+            <div class="tabs">
+                <div class="tab-header">
+                    <div class="tab-btn active" data-tab="file-upload">
+                        <i class="fas fa-file-upload"></i> 文件上传
+                    </div>
+                    <div class="tab-btn" data-tab="text-input">
+                        <i class="fas fa-keyboard"></i> 文本输入
+                    </div>
+                </div>
+                
+                <div class="tab-content">
+                    <div class="tab-pane active" id="file-upload">
+                        <div class="upload-section">
+                            <h2>上传文件</h2>
+                            <p class="description">支持 .txt、.pdf、.docx 格式的文件</p>
+                            <form id="upload-form">
+                                <div class="file-input-container">
+                                    <input type="file" id="file-input" accept=".txt,.pdf,.docx">
+                                    <label for="file-input" class="file-label">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <span>选择文件</span>
+                                    </label>
+                                    <div id="file-name">未选择文件</div>
+                                </div>
+                                <button type="submit" class="btn-primary">
+                                    <i class="fas fa-cogs"></i> 生成知识图谱
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-pane" id="text-input">
+                        <div class="text-input-section">
+                            <h2>输入文本</h2>
+                            <p class="description">直接输入文本内容，生成知识图谱</p>
+                            <form id="text-form">
+                                <textarea id="text-content" placeholder="请在此处输入文本内容..."></textarea>
+                                <button type="submit" class="btn-primary">
+                                    <i class="fas fa-cogs"></i> 生成知识图谱
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="status-bar"></div>
+            
+            <section class="graph-section">
+                <div class="graph-header">
+                    <h2>知识图谱</h2>
+                    <div class="graph-controls">
+                        <button id="zoom-in" class="btn-control" title="放大"><i class="fas fa-search-plus"></i></button>
+                        <button id="zoom-out" class="btn-control" title="缩小"><i class="fas fa-search-minus"></i></button>
+                        <button id="reset-view" class="btn-control" title="重置视图"><i class="fas fa-sync-alt"></i></button>
+                        <button id="toggle-legend" class="btn-control" title="显示/隐藏图例"><i class="fas fa-list"></i></button>
+                        <button id="toggle-search" class="btn-control" title="显示/隐藏搜索"><i class="fas fa-search"></i></button>
+                        <button id="save-to-neo4j" class="btn-control" title="保存到Neo4j"><i class="fas fa-save"></i></button>
+                    </div>
+                </div>
+                <div id="graph-container"></div>
+                <div class="entity-details-panel">
+                    <h3>实体详情</h3>
+                    <div id="entity-details">
+                        <p class="placeholder">点击图谱中的节点查看详情</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+        
+        <footer>
+            <p>© 2023 文本知识图谱生成系统 | 基于 D3.js 和 Flask</p>
+        </footer>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/test2kg.js') }}"></script>
+</body>
+</html> 

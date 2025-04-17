@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>节点信息管理 - 知识图谱可视化</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/css/graph.css" rel="stylesheet">
+    <!-- 引入SweetAlert2库 -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <style>
+        .management-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .btn-icon {
+            margin-right: 5px;
+        }
+        .node-filter {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .action-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">知识图谱可视化</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/stats">统计分析</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/nodes">节点管理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/relations">关系管理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/text2kg">文本生成图谱</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container" style="padding-top: 70px;">
+        <h1 class="text-center main-title">节点信息管理</h1>
+        
+        <!-- 节点筛选 -->
+        <div class="management-container node-filter">
+            <h4><i class="fas fa-filter me-2"></i>节点筛选</h4>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">节点名称</label>
+                    <input type="text" class="form-control" id="filter-name" placeholder="输入节点名称">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">节点类型</label>
+                    <select class="form-select" id="filter-type">
+                        <option value="">全部类型</option>
+                        <!-- 动态加载节点类型 -->
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" id="btn-search">
+                        <i class="fas fa-search btn-icon"></i>搜索
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 节点列表与操作 -->
+        <div class="management-container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4><i class="fas fa-list me-2"></i>节点列表</h4>
+                <button class="btn btn-success" id="btn-add-node">
+                    <i class="fas fa-plus btn-icon"></i>添加节点
+                </button>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>名称</th>
+                            <th>类型</th>
+                            <th>属性数量</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="node-list">
+                        <!-- 节点数据将动态加载 -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页 -->
+            <nav aria-label="节点列表分页">
+                <ul class="pagination justify-content-center" id="pagination">
+                    <!-- 分页将动态生成 -->
+                </ul>
+            </nav>
+        </div>
+        
+        <!-- 节点详情模态框 -->
+        <div class="modal fade" id="nodeModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="nodeModalTitle">节点详情</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="node-form">
+                            <input type="hidden" id="node-id">
+                            <div class="mb-3">
+                                <label class="form-label">节点显示名称 (title)</label>
+                                <input type="text" class="form-control" id="node-name" required>
+                                <div class="form-text">显示名称来自节点的title属性</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">节点类型</label>
+                                <select class="form-select" id="node-type" required>
+                                    <!-- 动态加载节点类型 -->
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">节点属性</label>
+                                <div id="node-properties">
+                                    <!-- 属性字段将动态生成 -->
+                                </div>
+                                <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="add-property">
+                                    <i class="fas fa-plus btn-icon"></i>添加属性
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-primary" id="save-node">保存</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 删除确认模态框 -->
+        <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">确认删除</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>您确定要删除节点 "<span id="delete-node-name"></span>" 吗？</p>
+                        <p class="text-danger">注意：删除节点将同时删除与该节点相关的所有关系，此操作不可恢复！</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-danger" id="confirm-delete">确认删除</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 提示框 -->
+        <div class="toast-container position-fixed bottom-0 end-0 p-3">
+            <div class="toast" id="toast" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header">
+                    <strong class="me-auto" id="toast-title">提示</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body" id="toast-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- 引入SweetAlert2库 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+    <script src="/static/js/node_management.js"></script>
+</body>
+</html>
