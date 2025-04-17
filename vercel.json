@@ -36,19 +36,6 @@
       "dest": "/app_final.py"
     }
   ],
-  "env": {
-    "NEO4J_URI": "@NEO4J_URI",
-    "NEO4J_USER": "@NEO4J_USER",
-    "NEO4J_PASSWORD": "@NEO4J_PASSWORD",
-    "OPENAI_API_KEY": "@OPENAI_API_KEY",
-    "OPENAI_MODEL": "@OPENAI_MODEL",
-    "OPENAI_TEMPERATURE": "@OPENAI_TEMPERATURE",
-    "HTTP_PROXY": "@HTTP_PROXY",
-    "HTTPS_PROXY": "@HTTPS_PROXY",
-    "DEBUG": "False",
-    "PORT": "3000",
-    "HOST": "0.0.0.0",
-    "SECRET_KEY": "@SECRET_KEY"
-  },
+
   "installCommand": "pip install -r requirements.txt"
 }
