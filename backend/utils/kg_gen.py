@@ -3,8 +3,8 @@ import warnings
 warnings.filterwarnings("ignore")
 import os
 from kg_gen import KGGen
-from openai import OpenAI
-import openai
+# from openai import OpenAI
+# import openai
 from .neo4j_utils import save_to_neo4j
 from dotenv import load_dotenv
 
@@ -18,7 +18,7 @@ if os.getenv('HTTPS_PROXY'):
     os.environ['HTTPS_PROXY'] = os.getenv('HTTPS_PROXY')
 
 # 设置OpenAI API密钥
-openai.api_key = os.getenv('OPENAI_API_KEY')
+# openai.api_key = os.getenv('OPENAI_API_KEY')
 
 # 初始化KGGen
 kg = KGGen(
@@ -28,56 +28,55 @@ kg = KGGen(
 )
 
 
-def get_entity_type(entity):
-    """
-    Function to analyze and classify an entity's type using OpenAI's GPT model.
-    """
-    try:
-        # Create the message to be sent to the OpenAI API
-        messages = [
-            {"role": "system", "content": "You are an expert in analyzing the type of entities. Based on the given entity, classify it into categories like Person, Location, Time, Organization, Event, or Other."},
-            {"role": "user", "content": f"Please classify the following entity: {entity}"},
-            {"role": "assistant", "content": """
-                Example 1: 
-                Input: Please classify the following entity: 坂本龍馬 
-                Output: Person
-                Example 2: 
-                Input: Please classify the following entity: 日本
-                Output: Location
-                Example 3: 
-                Input: Please classify the following entity: 1800-01-01
-                Output: Time
-                Example 4: 
-                Input: Please classify the following entity: 美国商务部
-                Output: Organization
-                Example 5: 
-                Input: Please classify the following entity: 杀人事件
-                Output: Event
-                Example 6: 
-                Input: Please classify the following entity: 子产品供应链
-                Output: Other
-                Example 7: 
-                Input: Please classify the following entity: 西游记
-                Output: Work
-            """}
-        ]
+# def get_entity_type(entity):
+#     """
+#     Function to analyze and classify an entity's type using OpenAI's GPT model.
+#     """
+#     try:
+#         # Create the message to be sent to the OpenAI API
+#         messages = [
+#             {"role": "system", "content": "You are an expert in analyzing the type of entities. Based on the given entity, classify it into categories like Person, Location, Time, Organization, Event, or Other."},
+#             {"role": "user", "content": f"Please classify the following entity: {entity}"},
+#             {"role": "assistant", "content": """
+#                 Example 1: 
+#                 Input: Please classify the following entity: 坂本龍馬 
+#                 Output: Person
+#                 Example 2: 
+#                 Input: Please classify the following entity: 日本
+#                 Output: Location
+#                 Example 3: 
+#                 Input: Please classify the following entity: 1800-01-01
+#                 Output: Time
+#                 Example 4: 
+#                 Input: Please classify the following entity: 美国商务部
+#                 Output: Organization
+#                 Example 5: 
+#                 Input: Please classify the following entity: 杀人事件
+#                 Output: Event
+#                 Example 6: 
+#                 Input: Please classify the following entity: 子产品供应链
+#                 Output: Other
+#                 Example 7: 
+#                 Input: Please classify the following entity: 西游记
+#                 Output: Work
+#             """}
+#         ]
 
-        # Call OpenAI API for classification
-        response = openai.chat.completions.create(
-            model="gpt-4o",  # GPT model of your choice
-            messages=messages,
-            max_tokens=100,
-            temperature=0.3,
-            n=1,
-            stop=None
-        )
+#         # Call OpenAI API for classification
+#         response = openai.chat.completions.create(
+#             model="gpt-4o",  # GPT model of your choice
+#             messages=messages,
+#             max_tokens=100,
+#             temperature=0.3,
+#             n=1,
+#             stop=None
+#         )
         
-        # Extract the entity type from the response
-        entity_type = response['choices'][0]['message']['content'].strip()
-        return entity_type
-    except Exception as e:
-        print(f"Error with OpenAI API: {e}")
-        return "Unknown"  # Default return value in case of error
+#         # Extract the entity type from the response
+#         return response['choices'][0]['message']['content'].strip()
+#     except Exception as e:
+#         print(f"Error with OpenAI API: {e}")
+#         return "Unknown"  # Default return value in case of error
 
 
 def extract_entities_and_relations(text):

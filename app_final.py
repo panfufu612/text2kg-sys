@@ -1,7 +1,6 @@
 import os
 import logging
 import json
-from datetime import datetime
 from flask import Flask, render_template, jsonify, request, send_from_directory, g
 from flask_cors import CORS
 from neo4j import GraphDatabase, exceptions, basic_auth
